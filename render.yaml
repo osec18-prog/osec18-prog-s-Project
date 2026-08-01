@@ -19,6 +19,23 @@ services:
       # cannot read back.
       - key: ADMIN_PASSWORD
         sync: false
+      # Supabase PostgreSQL. This is the ONLY database variable the
+      # application reads. Use the TRANSACTION POOLER string (port 6543), not
+      # the direct connection (5432): the app opens a connection per request,
+      # and direct connections would exhaust the project's limit.
+      # Unsetting this reverts the whole application to SQLite — that is the
+      # rollback procedure.
+      - key: DATABASE_URL
+        sync: false
+      # Declared for the Supabase client SDK. NOT read by the Flask app today;
+      # they exist for the Storage and Realtime work that is prepared but
+      # intentionally inactive. See supabase_setup.sql.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: FLASK_ENV
         value: production
       - key: QR_HOST_URL

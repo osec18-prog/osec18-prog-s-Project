@@ -5,6 +5,7 @@ Run ONCE after deploying to create tables and seed default data.
 import sqlite3
 import os
 
+import db
 from core import hash_password
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "campusconnect.db")
@@ -33,7 +34,7 @@ def _admin_seed_password():
 
 
 def init_database():
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     # -----------------------------
@@ -261,7 +262,10 @@ def init_database():
     conn.commit()
     conn.close()
     print("Database initialized successfully!")
-    print(f"Database path: {DB_PATH}")
+    if db.is_postgres():
+        print("Backend: PostgreSQL (Supabase)")
+    else:
+        print(f"Backend: SQLite — {DB_PATH}")
 
 
 if __name__ == "__main__":

@@ -8,8 +8,12 @@ import os
 import qrcode
 import uuid
 
+# Database compatibility layer. Talks to Supabase PostgreSQL when DATABASE_URL
+# is set, and to the original SQLite file when it is not. Every dialect
+# difference is handled inside db.py; nothing here needs to know which.
+import db
+
 from core import (
-    DB_PATH,
     QR_SCHEDULE_SQL,
     attendance_exists,
     attendance_session_active,
@@ -199,7 +203,7 @@ def build_host_url():
 
 def get_qr_schedules():
     """Every class schedule that can be turned into an attendance QR."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute(QR_SCHEDULE_SQL + " ORDER BY s.subject_code")
     schedules = cursor.fetchall()
@@ -227,7 +231,7 @@ def login():
             error="Too many login attempts. Please wait a few minutes and try again."
         ), 429
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -289,7 +293,7 @@ def register():
     email = request.form["email"]
     password = request.form["password"]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     try:
@@ -357,7 +361,7 @@ def admin_dashboard():
     if "role" not in session or session["role"] != "admin":
         return redirect("/")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""SELECT id, student_id, fullname, email FROM students ORDER BY fullname""")
@@ -409,9 +413,12 @@ def edit_admin():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
-    cursor.execute("""SELECT * FROM students WHERE role='admin' LIMIT 1""")
+    # ORDER BY is required, not cosmetic: SQLite returns the lowest rowid for
+    # an unordered LIMIT 1, PostgreSQL may return any matching row. Without
+    # this, a second admin account would make this page edit an arbitrary one.
+    cursor.execute("""SELECT * FROM students WHERE role='admin' ORDER BY id LIMIT 1""")
     admin = cursor.fetchone()
     conn.close()
     return render_template("edit_admin.html", admin=admin)
@@ -429,7 +436,7 @@ def update_admin():
     email = request.form["email"]
     password = request.form.get("password") or ""
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     if password:
@@ -465,7 +472,7 @@ def delete_student(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM students WHERE id=?", (id,))
     conn.commit()
@@ -484,7 +491,7 @@ def edit_student(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM students WHERE id=?", (id,))
     student = cursor.fetchone()
@@ -507,7 +514,7 @@ def update_student():
     fullname = request.form["fullname"]
     email = request.form["email"]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE students
@@ -530,7 +537,7 @@ def admin_announcements():
     if session["role"] not in ["admin", "professor"]:
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("""SELECT id, title, description, date_created FROM announcements ORDER BY id DESC""")
     announcements = cursor.fetchall()
@@ -553,7 +560,7 @@ def add_announcement():
     if not title or not description:
         return redirect("/admin_announcements")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO announcements (title, description, date_created)
@@ -570,7 +577,7 @@ def delete_announcement(id):
     if "role" not in session or session["role"] != "admin":
         return redirect("/")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM announcements WHERE id=?", (id,))
     conn.commit()
@@ -583,7 +590,7 @@ def edit_announcement(id):
     if "role" not in session or session["role"] != "admin":
         return redirect("/")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("SELECT id, title, description FROM announcements WHERE id=?", (id,))
     announcement = cursor.fetchone()
@@ -605,7 +612,7 @@ def update_announcement():
     title = request.form["title"]
     description = request.form["description"]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -635,7 +642,7 @@ def student_announcements():
     if "student_id" not in session:
         return redirect("/")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -663,7 +670,7 @@ def admin_professors():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -698,7 +705,7 @@ def add_professor():
         password = request.form["password"]
         department = request.form["department"]
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = db.connect()
         cursor = conn.cursor()
 
         try:
@@ -732,7 +739,7 @@ def delete_professor(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -760,7 +767,7 @@ def update_professor():
     email = request.form["email"]
     department = request.form["department"]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -792,7 +799,7 @@ def edit_professor(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -822,7 +829,7 @@ def edit_subject(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -848,7 +855,7 @@ def admin_subjects():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -881,7 +888,7 @@ def add_subject():
     year_level = request.form["year_level"]
     semester = request.form["semester"]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -910,7 +917,7 @@ def delete_subject(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -939,7 +946,7 @@ def update_subject():
     year_level = request.form["year_level"]
     semester = request.form["semester"]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     # Check kung may kaparehong Subject Code
@@ -989,7 +996,7 @@ def admin_schedules():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1101,7 +1108,7 @@ def add_schedule():
 
     # ── Insert into database ────────────────────────────────────────────────
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = db.connect()
         cursor = conn.cursor()
 
         # Resolve professor_id
@@ -1210,7 +1217,7 @@ def update_schedule():
 
     # ── Update database ─────────────────────────────────────────────────────
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = db.connect()
         cursor = conn.cursor()
 
         cursor.execute(
@@ -1285,7 +1292,7 @@ def api_attendance_record():
     if not parsed:
         return jsonify({"success": False, "message": "Invalid QR format."}), 400
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("SELECT id FROM attendance WHERE uuid=?", (record_id,))
@@ -1348,7 +1355,7 @@ def api_attendance_sync():
 
     results = []
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     for record in records:
@@ -1460,7 +1467,7 @@ def delete_schedule(id):
         return redirect("/dashboard")
 
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = db.connect()
         cursor = conn.cursor()
 
         # Fetch schedule info for the flash message
@@ -1495,7 +1502,7 @@ def edit_schedule(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1579,7 +1586,7 @@ def create_qr():
     expires_at = request.form.get("expires_at")
 
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
 
@@ -1770,7 +1777,7 @@ def student_schedule():
     if "student_id" not in session:
         return redirect("/")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1822,7 +1829,7 @@ def active_attendance():
         return redirect("/professor_login")
 
     professor_id = session["professor_id"]
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, professor_id, professor_name, subject_code, subject_name, day, schedule, date, expires_at, token
@@ -1851,7 +1858,7 @@ def close_attendance_session(session_id):
     if "role" not in session or session["role"] != "professor":
         return redirect("/professor_login")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("UPDATE attendance_sessions SET active=0 WHERE id=? AND professor_id=?", (session_id, session["professor_id"]))
     conn.commit()
@@ -1892,7 +1899,7 @@ def mark_attendance():
     date = parsed["date"] if parsed["version"] == 2 else now.strftime("%Y-%m-%d")
     current_time = now.strftime("%I:%M %p")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     if parsed["version"] == 2:
@@ -1933,7 +1940,7 @@ def student_attendance():
     if "student_id" not in session:
         return redirect("/")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1967,7 +1974,7 @@ def admin_students():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -2006,7 +2013,7 @@ def add_student():
         email = request.form["email"]
         password = request.form["password"]
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = db.connect()
         cursor = conn.cursor()
 
         try:
@@ -2042,7 +2049,7 @@ def admin_reports():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -2075,7 +2082,7 @@ def admin_attendance():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -2111,7 +2118,7 @@ def professor_login():
         ), 429
 
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -2163,7 +2170,7 @@ def professor_dashboard():
     if "professor_id" not in session:
         return redirect("/professor_login")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
     cursor.execute(
         "SELECT COUNT(*) FROM attendance_sessions WHERE professor_id=? AND active=1",
@@ -2194,7 +2201,7 @@ def professor_signup():
 
     try:
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = db.connect()
         cursor = conn.cursor()
 
         cursor.execute("""

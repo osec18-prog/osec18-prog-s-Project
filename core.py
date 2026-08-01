@@ -12,6 +12,10 @@ import threading
 import time
 from datetime import datetime
 
+# Database compatibility layer — PostgreSQL when DATABASE_URL is set, the
+# original SQLite file when it is not. All dialect translation lives in db.py.
+import db
+
 # ── Password hashing (werkzeug is already a Flask dependency) ────────────
 from werkzeug.security import generate_password_hash as _generate_hash, \
     check_password_hash as _check_hash
@@ -23,7 +27,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "campusconnec
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -145,7 +149,7 @@ def migrate_schema():
     This is safe to call repeatedly — every statement uses IF NOT EXISTS
     or graceful ALTER TABLE fallback.  Existing data is never touched.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     # 1.  Departments
@@ -334,7 +338,7 @@ def migrate_schema():
 def ensure_schema():
     """Bring an older campusconnect.db up to the columns/tables the app needs."""
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = db.connect()
     cursor = conn.cursor()
 
     for stmt in [
