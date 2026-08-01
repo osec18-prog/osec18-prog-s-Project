@@ -328,7 +328,14 @@ def _get_pool():
         return _pool
     with _pool_lock:
         if _pool is None:
-            import psycopg2.pool
+            try:
+                import psycopg2.pool
+            except ImportError:
+                raise OperationalError(
+                    "DATABASE_URL is set but psycopg2 is not installed.\n"
+                    "  pip install psycopg2-binary\n"
+                    "Or unset DATABASE_URL to fall back to SQLite."
+                ) from None
             minconn = int(os.environ.get("DB_POOL_MIN", "1"))
             maxconn = int(os.environ.get("DB_POOL_MAX", "10"))
             _pool = psycopg2.pool.ThreadedConnectionPool(

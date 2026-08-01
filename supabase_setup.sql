@@ -36,8 +36,11 @@ CREATE INDEX IF NOT EXISTS idx_attendance_professor_id
     ON attendance (professor_id);
 
 -- Scan de-duplication: WHERE uuid=?  (was the only SQLite index)
+-- Partial, because rows predating offline scanning have no uuid. Empty
+-- strings are excluded as well as NULLs: PostgreSQL treats every NULL as
+-- distinct, but two '' values would collide and break the migration.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_uuid
-    ON attendance (uuid) WHERE uuid IS NOT NULL;
+    ON attendance (uuid) WHERE uuid IS NOT NULL AND uuid <> '';
 
 -- core.py attendance_session_active(): WHERE token=? AND professor_id=?
 CREATE INDEX IF NOT EXISTS idx_sessions_token_professor
@@ -76,9 +79,20 @@ CREATE INDEX IF NOT EXISTS idx_revoked_jwts_expires ON revoked_jwts (expires_at)
 -- Run migrate_data.py FIRST. If duplicates remain this statement fails, and
 -- that failure is the correct outcome — it means cleanup did not happen.
 
-ALTER TABLE attendance
-    ADD CONSTRAINT uq_attendance_student_subject_date
-    UNIQUE (student_id, subject_code, date);
+-- Wrapped so the whole file stays re-runnable: a plain ADD CONSTRAINT fails
+-- the second time, which would stop every statement after it.
+DO $$
+BEGIN
+    ALTER TABLE attendance
+        ADD CONSTRAINT uq_attendance_student_subject_date
+        UNIQUE (student_id, subject_code, date);
+EXCEPTION
+    WHEN duplicate_table THEN
+        RAISE NOTICE 'uq_attendance_student_subject_date already exists, skipping';
+    WHEN unique_violation THEN
+        RAISE EXCEPTION 'Duplicate attendance rows are still present. Run '
+                        'migrate_data.py --apply first; it removes them.';
+END $$;
 
 
 -- ---------------------------------------------------------------------------
@@ -129,10 +143,28 @@ REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
 -- attendance_sessions is published instead, since that is what actually
 -- changes when a professor opens or closes a QR session.
 
-ALTER PUBLICATION supabase_realtime ADD TABLE announcements;
-ALTER PUBLICATION supabase_realtime ADD TABLE schedules;
-ALTER PUBLICATION supabase_realtime ADD TABLE attendance;
-ALTER PUBLICATION supabase_realtime ADD TABLE attendance_sessions;
+-- Adding a table that is already published raises an error, so each one is
+-- guarded to keep this file re-runnable.
+DO $$
+DECLARE
+    t text;
+BEGIN
+    FOREACH t IN ARRAY ARRAY['announcements', 'schedules', 'attendance',
+                             'attendance_sessions']
+    LOOP
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_publication_tables
+            WHERE pubname = 'supabase_realtime'
+              AND schemaname = 'public'
+              AND tablename = t
+        ) THEN
+            EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE %I', t);
+            RAISE NOTICE 'realtime: added %', t;
+        ELSE
+            RAISE NOTICE 'realtime: % already published', t;
+        END IF;
+    END LOOP;
+END $$;
 
 
 -- ---------------------------------------------------------------------------

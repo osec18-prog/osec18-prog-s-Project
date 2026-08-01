@@ -10,6 +10,10 @@ campusconnect.db-wal
 campusconnect.db-shm
 *.db.backup_*
 
+# Snapshots written by verify_migration.py --save
+*_baseline.txt
+sqlite_baseline.txt
+
 # Local backups taken during development
 app.py.backup_*
 app.working_reference_*.pyc
