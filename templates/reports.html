@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Reports</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<h2>CampusConnect+</h2>
+
+<ul>
+
+<li><a href="/admin_dashboard"> Dashboard</a></li>
+<li><a href="/admin_students" Students</a></li>
+<li><a href="/professors"> Professors</a></li>
+<li><a href="/subjects"> Subjects</a></li>
+<li><a href="/schedules"> Schedule Management</a></li>
+<li><a href="/student_attendance"> Attendance</a></li>
+<li><a href="/reports"> Reports</a></li>
+<li><a href="/announcements"> Announcements</a></li>
+<li><a href="/"> Logout</a></li>
+
+</ul>
+
+</div>
+
+<div class="main">
+
+<h1>Attendance Reports</h1>
+
+<a href="/admin_dashboard">
+    <button class="back-btn">⬅ Back</button>
+</a>
+
+<br><br>
+
+<table>
+
+<tr>
+    <th>Student</th>
+    <th>Subject</th>
+    <th>Professor</th>
+    <th>Date</th>
+    <th>Time</th>
+    <th>Status</th>
+</tr>
+
+{% for row in attendance %}
+
+<tr>
+
+<td>{{ row[0] }}</td>
+<td>{{ row[1] }}</td>
+<td>{{ row[2] }}</td>
+<td>{{ row[3] }}</td>
+<td>{{ row[4] }}</td>
+<td>{{ row[5] }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>

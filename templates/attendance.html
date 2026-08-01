@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<title>Attendance Management</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+</head>
+
+<body>
+
+<div class="main">
+
+<h1>📷 Attendance Management</h1>
+
+<br>
+
+<a href="/generate_qr">
+<button class="edit-btn">
+
+Generate QR
+
+</button>
+</a>
+
+<br><br>
+
+<img
+src="{{ url_for('static', filename='qr/attendance_qr.png') }}"
+width="250"
+onerror="this.style.display='none';">
+
+<br><br>
+
+<br><br>
+
+<table>
+
+<tr>
+
+<th>Student ID</th>
+<th>Name</th>
+<th>Subject</th>
+<th>Professor</th>
+<th>Date</th>
+<th>Time</th>
+<th>Status</th>
+
+</tr>
+
+{% for row in attendance %}
+
+<tr>
+
+<td>{{ row[1] }}</td>
+<td>{{ row[2] }}</td>
+<td>{{ row[4] }}</td>
+<td>{{ row[5] }}</td>
+<td>{{ row[6] }}</td>
+<td>{{ row[7] }}</td>
+<td>{{ row[8] }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/admin_dashboard">
+<button>⬅ Back</button>
+</a>
+
+</div>
+
+</body>
+
+</html>

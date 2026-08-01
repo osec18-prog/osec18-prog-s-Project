@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Professor Login</title>
+
+<link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
+
+</head>
+
+
+<body>
+
+
+<div class="login-box">
+
+<h1>CampusConnect+</h1>
+
+
+<h3>AICS Professor Portal</h3>
+
+
+
+<form action="/professor_login" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+{% if error %}
+<p class="error">
+{{error}}
+</p>
+{% endif %}
+
+
+
+<input 
+type="email"
+name="email"
+placeholder="Professor Email"
+required>
+
+
+
+<input 
+type="password"
+name="password"
+placeholder="Password"
+required>
+
+
+
+<button type="submit">
+LOGIN
+</button>
+
+
+</form>
+
+
+
+<br>
+
+
+<a href="/professor_signup" class="create-account">
+Create Professor Account
+</a>
+
+<div class="footer">
+
+CampusConnect+ Professor Portal · Asian Institute of Computer Studies
+
+
+</div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Professor QR</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+<div class="main">
+    <h1>🔐 Verify Professor QR</h1>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+        <div class="alert alert-success">{{ success }}</div>
+    {% endif %}
+    <form action="/verify_professor_qr" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label><b>Paste Professor QR Payload</b></label>
+        <textarea name="qr" rows="4" required style="width:100%;"></textarea>
+        <br><br>
+        <button type="submit" class="edit-btn">Verify</button>
+    </form>
+    <br>
+    <a href="/professor_dashboard"><button>⬅ Back to Dashboard</button></a>
+</div>
+</body>
+</html>

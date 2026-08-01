@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CampusConnect+ | Professor Management</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+</head>
+<body>
+
+<div class="sidebar">
+
+<div class="logo-area">
+
+<img src="{{ url_for('static', filename='images/transparentlogo.png') }}" class="logo">
+
+<h2>CampusConnect+</h2>
+
+<p>Administrator Panel</p>
+
+</div>
+
+<ul>
+
+<li><a href="/admin_dashboard"> Dashboard</a></li>
+
+<li><a href="/admin_students"> Students</a></li>
+
+<li><a href="/admin_professors"> Professors</a></li>
+
+<li><a href="/admin_subjects"> Subjects</a></li>
+
+<li><a href="/admin_schedules"> Schedules</a></li>
+
+<li><a href="/generate_qr"> Generate QR</a></li>
+
+<li><a href="/admin_attendance"> Attendance</a></li>
+
+<li><a href="/admin_reports"> Reports</a></li>
+
+<li><a href="/admin_announcements"> Announcements</a></li>
+
+<li><a href="/logout"> Logout</a></li>
+
+</ul>
+
+</div>
+
+<div class="main">
+
+<h1>Professor Management</h1>
+
+<p>Manage all professors.</p>
+
+<div class="section-header">
+    <div>
+        <h1>Professor Management</h1>
+        <p>Manage all professors.</p>
+    </div>
+    <div>
+        <a href="/add_professor" class="btn btn-primary me-2">+ Add Professor</a>
+        <a href="/admin_dashboard" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="mb-3">
+    <input
+        type="text"
+        id="searchInput"
+        class="form-control"
+        placeholder="Search Professor..."
+        onkeyup="searchProfessor()">
+</div>
+
+<table id="profTable">
+
+<tr>
+
+<th>ID</th>
+
+<th>Employee ID</th>
+
+<th>Full Name</th>
+
+<th>Email</th>
+
+<th>Department</th>
+
+<th>Action</th>
+
+</tr>
+
+{% for professor in professors %}
+
+<tr>
+
+<td>{{ professor[0] }}</td>
+
+<td>{{ professor[1] }}</td>
+
+<td>{{ professor[2] }}</td>
+
+<td>{{ professor[3] }}</td>
+
+<td>{{ professor[4] }}</td>
+
+<td>
+    <a href="/edit_professor/{{ professor[0] }}" class="btn btn-sm btn-outline-primary me-2">Edit</a>
+    <form action="/delete_professor/{{ professor[0] }}" method="POST" style="display:inline" onsubmit="return confirm('Delete Professor?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+    </form>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+<script>
+
+function searchProfessor(){
+
+let input=document.getElementById("searchInput");
+
+let filter=input.value.toUpperCase();
+
+let table=document.getElementById("profTable");
+
+let tr=table.getElementsByTagName("tr");
+
+for(let i=1;i<tr.length;i++){
+
+let td=tr[i].getElementsByTagName("td")[2];
+
+if(td){
+
+let txt=td.textContent||td.innerText;
+
+if(txt.toUpperCase().indexOf(filter)>-1){
+
+tr[i].style.display="";
+
+}else{
+
+tr[i].style.display="none";
+
+}
+
+}
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask>=3.0
+flask-wtf>=1.2
+PyJWT>=2.8
+qrcode[pil]>=7.4
+Pillow>=10.0
+gunicorn>=21.2
+

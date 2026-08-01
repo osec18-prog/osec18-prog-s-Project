@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Announcements</title>
+<h1 style="color:red;font-size:60px;">TEST NI VINCENT</h1>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<div class="sidebar">
+
+    <div class="logo-area">
+        <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" class="logo">
+        <h2>CampusConnect+</h2>
+        <p>AICS Student Portal</p>
+    </div>
+
+    <ul>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li><a href="/student_announcements">Announcements</a></li>
+        <li><a href="/student_schedule">Class Schedule</a></li>
+        <li><a href="/student_attendance">Attendance History</a></li>
+        <li><a href="/logout">Logout</a></li>
+    </ul>
+
+</div>
+
+<div class="main">
+
+    <div class="topbar">
+        <div>
+            <h1>School Announcements</h1>
+            <p>Latest announcements from the administration.</p>
+        </div>
+    </div>
+
+    <div class="announcement-card">
+
+        <div class="card-body">
+
+            {% for announcement in announcements %}
+
+            <div class="announcement-item">
+
+                <div class="announcement-meta">
+
+                    <h6>{{ announcement[0] }}</h6>
+
+                    <p>{{ announcement[1] }}</p>
+
+                </div>
+
+                <span>{{ announcement[2] }}</span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

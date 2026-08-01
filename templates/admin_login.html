@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>CampusConnect+ Admin Login</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<div class="login-box">
+
+<img src="{{ url_for('static', filename='images/transparentlogo.png') }}" class="logo">
+
+<h1>CampusConnect+</h1>
+
+<h3>Administrator Login</h3>
+
+<form action="/admin_login" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+{% if error %}
+<div class="error-message">
+{{ error }}
+</div>
+{% endif %}
+
+<input type="text"
+name="username"
+placeholder="Username"
+required>
+
+<input type="password"
+name="password"
+placeholder="Password"
+required>
+
+<button type="submit">
+LOGIN
+</button>
+
+</form>
+
+<br>
+
+<a href="/">Back to Student Login</a>
+
+</div>
+
+</body>
+
+</html>

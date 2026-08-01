@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Generate QR</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+</head>
+
+<body>
+
+<div class="main">
+
+<h1>📷 Generate Attendance QR</h1>
+
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+{% if success %}
+    <div class="alert alert-success">QR code generated successfully. Share the attendance link with students.</div>
+{% endif %}
+
+<form action="/create_qr" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card" style="padding: 24px; margin-bottom: 24px;">
+        <div style="display: grid; gap: 22px;">
+            <div>
+                <label><b>Select Subject</b></label>
+                <select id="scheduleSelect" name="schedule_id" required style="width:100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(15, 33, 80, 0.16); background: #f7f9ff; font-size: 0.98rem;">
+                    <option value="">-- Select Subject --</option>
+                    {% for schedule in schedules %}
+                        <option value="{{ schedule[0] }}">{{ schedule[1] }} — {{ schedule[2] }} | {{ schedule[3] }} | {{ schedule[4] }} {{ schedule[5] }}</option>
+                    {% endfor %}
+                </select>
+                {% if not schedules %}
+                    <div class="alert alert-warning" style="margin-top: 12px; padding: 14px; border-radius: 16px; background: #fef3c7; color: #92400e;">
+                        No class schedules found. A subject only appears here once it has a schedule —
+                        add one under <a href="/admin_schedules">Schedules</a> first.
+                    </div>
+                {% endif %}
+            </div>
+            <div style="display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <div>
+                    <label><b>Date</b></label>
+                    <input type="date" name="date" id="attendance_date" required style="width:100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(15, 33, 80, 0.16); background: #f7f9ff;" />
+                </div>
+                <div>
+                    <label><b>Expiration Time</b></label>
+                    <input type="time" name="expires_at" id="expires_at" required style="width:100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(15, 33, 80, 0.16); background: #f7f9ff;" />
+                </div>
+            </div>
+            <div id="schedulePreview" style="display: none; background: rgba(47, 105, 255, 0.08); border-radius: 18px; padding: 18px; color: var(--text-dark);">
+                <strong>Selected Schedule</strong>
+                <p id="schedulePreviewText" style="margin: 8px 0 0; color: var(--text-muted);"></p>
+            </div>
+        </div>
+    </div>
+
+    {% if role == 'professor' %}
+        {% if verified_professor %}
+            <div class="alert alert-info">Professor identity verified. You may generate attendance QR codes.</div>
+        {% else %}
+            <div class="alert alert-warning">Please verify your Professor QR before generating attendance codes.</div>
+            <a href="/professor_qr"><button type="button" class="edit-btn" style="margin-top: 12px;">Generate Professor QR</button></a>
+        {% endif %}
+    {% endif %}
+
+    <button type="submit" class="edit-btn" style="width: 100%; padding: 14px 18px; font-size: 1rem; margin-top: 8px;">Generate QR</button>
+</form>
+
+{% if success and qr_image %}
+    <div style="margin-top: 24px;">
+        <h2>Generated Attendance QR</h2>
+        <img src="{{ url_for('static', filename=qr_image) }}" alt="Attendance QR" style="max-width: 320px; display: block; margin-bottom: 16px;" />
+        <a href="{{ qr_url }}" target="_blank">Open attendance link</a>
+        <div style="margin-top: 16px; padding: 18px; border-radius: 18px; background: rgba(247, 249, 255, 0.95); border: 1px solid rgba(15, 33, 80, 0.08);">
+            <strong>Phone-accessible link:</strong>
+            <div style="margin-top: 8px; word-break: break-all; color: var(--text-muted);">{{ qr_url }}</div>
+            {% if qr_host %}
+                <div style="margin-top: 10px; font-size: 0.95rem; color: var(--text-dark);">Resolved host: <strong>{{ qr_host }}</strong></div>
+            {% endif %}
+            {% if qr_host and ('localhost' in qr_host or '127.0.0.1' in qr_host or '0.0.0.0' in qr_host) %}
+                <div style="margin-top: 12px; padding: 14px; border-radius: 16px; background: #fef3c7; color: #92400e;">
+                    <strong>Important:</strong> Your scanned phone must be on the same Wi-Fi network as this computer. If the phone still cannot reach the link, stop the app and restart it with the host set to your PC IP, or set <code>QR_HOST_URL</code> in the server environment.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<br><br>
+
+<a href="{% if role == 'professor' %}/professor_dashboard{% else %}/admin_dashboard{% endif %}">
+<button>⬅ Back</button>
+</a>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('attendance_date');
+    const timeInput = document.getElementById('expires_at');
+    const scheduleSelect = document.getElementById('scheduleSelect');
+    const schedulePreview = document.getElementById('schedulePreview');
+    const schedulePreviewText = document.getElementById('schedulePreviewText');
+
+    if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    if (timeInput && !timeInput.value) {
+        const now = new Date();
+        timeInput.value = now.toTimeString().slice(0, 5);
+    }
+
+    if (scheduleSelect) {
+        scheduleSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            if (!this.value) {
+                schedulePreview.style.display = 'none';
+                return;
+            }
+            schedulePreviewText.textContent = selected.text;
+            schedulePreview.style.display = 'block';
+        });
+    }
+});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusConnect+ Student Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard-app">
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" alt="Campus Logo" class="brand-logo">
+            <div>
+                <h2>Campus Connect +</h2>
+                <p>Student Portal</p>
+            </div>
+        </div>
+        <nav class="dashboard-nav">
+            <a class="nav-link active" href="/dashboard"><i class="bi bi-house"></i> Dashboard</a>
+            <a class="nav-link" href="/student_announcements"><i class="bi bi-bullhorn"></i> Announcements</a>
+            <a class="nav-link" href="/student_schedule"><i class="bi bi-calendar3"></i> Class Schedule</a>
+            <a class="nav-link" href="/scan_qr"><i class="bi bi-qr-code"></i> Scan QR Attendance</a>
+            <a class="nav-link" href="/student_attendance"><i class="bi bi-clipboard-check"></i> Attendance History</a>
+            <a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </nav>
+    </aside>
+    <main class="dashboard-main">
+        <div class="topbar">
+            <div>
+                <h1>Student Dashboard</h1>
+                <p>Welcome, <strong>{{ fullname }}</strong></p>
+            </div>
+            <div class="user-panel">
+                <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" alt="Profile" class="profile">
+            </div>
+        </div>
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Quick Actions</h2>
+            </div>
+            <div class="stats-grid">
+                <a class="stat-card" href="/student_announcements">
+                    <div class="icon"><i class="bi bi-bullhorn"></i></div>
+                    <div class="stat-copy">
+                        <small class="stat-label">Announcements</small>
+                        <strong>View</strong>
+                    </div>
+                </a>
+                <a class="stat-card" href="/student_schedule">
+                    <div class="icon"><i class="bi bi-calendar3"></i></div>
+                    <div class="stat-copy">
+                        <small class="stat-label">Schedule</small>
+                        <strong>Check</strong>
+                    </div>
+                </a>
+                <a class="stat-card" href="/scan_qr">
+                    <div class="icon"><i class="bi bi-qr-code"></i></div>
+                    <div class="stat-copy">
+                        <small class="stat-label">Scan QR</small>
+                        <strong>Mark</strong>
+                    </div>
+                </a>
+                <a class="stat-card" href="/student_attendance">
+                    <div class="icon"><i class="bi bi-clipboard-check"></i></div>
+                    <div class="stat-copy">
+                        <small class="stat-label">Attendance</small>
+                        <strong>History</strong>
+                    </div>
+                </a>
+            </div>
+        </section>
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Student Features</h2>
+            </div>
+            <div class="dashboard-grid">
+                <a class="card" href="/student_announcements">
+                    <div class="card-body">
+                        <h3>Latest Announcements</h3>
+                        <p>View announcements from the Administrator.</p>
+                    </div>
+                </a>
+                <a class="card" href="/student_schedule">
+                    <div class="card-body">
+                        <h3>My Schedule</h3>
+                        <p>Check today's class schedule.</p>
+                    </div>
+                </a>
+                <a class="card" href="/scan_qr">
+                    <div class="card-body">
+                        <h3>Scan QR Attendance</h3>
+                        <p>Scan your attendance QR Code.</p>
+                    </div>
+                </a>
+                <a class="card" href="/student_attendance">
+                    <div class="card-body">
+                        <h3>Attendance History</h3>
+                        <p>View your attendance records.</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

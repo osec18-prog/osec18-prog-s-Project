@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusConnect+ | Administrator Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard-app">
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" alt="AICS Logo" class="brand-logo">
+            <div>
+                <h2>Campus Connect +</h2>
+                <p>Administrator Panel</p>
+            </div>
+        </div>
+        <nav class="dashboard-nav">
+            <a class="nav-link active" href="/admin_dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a class="nav-link" href="/admin_students"><i class="bi bi-people-fill"></i> Student Management</a>
+            <a class="nav-link" href="/admin_professors"><i class="bi bi-person-badge-fill"></i> Professor Management</a>
+            <a class="nav-link" href="/admin_subjects"><i class="bi bi-book-fill"></i> Subject Management</a>
+            <a class="nav-link" href="/admin_schedules"><i class="bi bi-calendar3-event-fill"></i> Schedule Management</a>
+            <a class="nav-link" href="/generate_qr"><i class="bi bi-qr-code-scan"></i> Generate QR</a>
+            <a class="nav-link" href="/admin_attendance"><i class="bi bi-clipboard-check"></i> Attendance</a>
+            <a class="nav-link" href="/admin_reports"><i class="bi bi-bar-chart-line-fill"></i> Reports</a>
+            <a class="nav-link" href="/admin_announcements"><i class="bi bi-megaphone-fill"></i> Announcements</a>
+            <a class="nav-link" href="/edit_admin"><i class="bi bi-gear-fill"></i> Edit Admin</a>
+            <a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </nav>
+    </aside>
+    <main class="dashboard-main">
+        <section class="dashboard-banner">
+            <div class="banner-top">
+                <button class="btn btn-primary banner-action">+ Admin</button>
+            </div>
+            <div class="banner-content">
+                <div class="banner-logo-wrap">
+                    <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" alt="Campus Logo">
+                </div>
+                <div>
+                    <h1>Campus Connect +</h1>
+                    <p>Administrator dashboard with real-time insights.</p>
+                </div>
+            </div>
+        </section>
+        <div class="topbar">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Welcome back, <strong>{{ fullname }}</strong></p>
+            </div>
+            <div class="user-panel">
+                <span>Admin</span>
+                <i class="bi bi-person-circle"></i>
+            </div>
+        </div>
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="icon"><i class="bi bi-mortarboard-fill"></i></div>
+                <div class="stat-copy">
+                    <small class="stat-label">Students</small>
+                    <strong>{{ total_students }}</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="bi bi-person-badge-fill"></i></div>
+                <div class="stat-copy">
+                    <small class="stat-label">Professors</small>
+                    <strong>{{ total_professors }}</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="bi bi-book-fill"></i></div>
+                <div class="stat-copy">
+                    <small class="stat-label">Subjects</small>
+                    <strong>{{ total_subjects }}</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="bi bi-calendar-event-fill"></i></div>
+                <div class="stat-copy">
+                    <small class="stat-label">Classes</small>
+                    <strong>{{ total_classes }}</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="bi bi-clock-history"></i></div>
+                <div class="stat-copy">
+                    <small class="stat-label">Active Sessions</small>
+                    <strong>{{ active_sessions }}</strong>
+                </div>
+            </div>
+        </section>
+        <section class="row gx-3 gy-4">
+            <div class="col-xl-8">
+                <div class="card quick-actions-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5>Quick Actions</h5>
+                                <p>Launch the most-used admin tools.</p>
+                            </div>
+                            <i class="bi bi-three-dots fs-4 text-muted"></i>
+                        </div>
+                        <div class="quick-actions-grid">
+                            <a href="/admin_students" class="btn-quick">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Create Student</span>
+                            </a>
+                            <a href="/admin_subjects" class="btn-quick">
+                                <i class="bi bi-book"></i>
+                                <span>Add Subject</span>
+                            </a>
+                            <a href="/admin_professors" class="btn-quick">
+                                <i class="bi bi-person-badge"></i>
+                                <span>Add Professor</span>
+                            </a>
+                            <a href="/generate_qr" class="btn-quick">
+                                <i class="bi bi-qr-code-scan"></i>
+                                <span>Generate QR Code</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card schedule-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5>Class Schedule</h5>
+                                <p>Today's schedule overview.</p>
+                            </div>
+                            <span class="text-muted">Jons</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="compact-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Subject</th>
+                                        <th>Section</th>
+                                        <th>Professor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>8:00 - 9:30 AM</td>
+                                        <td>Computer Programming</td>
+                                        <td>CTO Ronrios</td>
+                                        <td>Stella</td>
+                                    </tr>
+                                    <tr>
+                                        <td>10:00 - 1:30 AM</td>
+                                        <td>Database Systems</td>
+                                        <td>Teadle</td>
+                                        <td>Prof. Julia</td>
+                                    </tr>
+                                    <tr>
+                                        <td>10:00 - 11:30 AM</td>
+                                        <td>Database Systems</td>
+                                        <td>Teadle</td>
+                                        <td>Prof. Julia</td>
+                                    </tr>
+                                    <tr>
+                                        <td>1:00 - 1:00 PM</td>
+                                        <td>Wath Ranastons</td>
+                                        <td>CTO Ronrios</td>
+                                        <td>Studes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2:00 - 0:30 PM</td>
+                                        <td>Patter sections</td>
+                                        <td>Vail sections</td>
+                                        <td>Prof. Anne</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card announcement-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5>Announcements</h5>
+                                <p>Latest campus notices.</p>
+                            </div>
+                            <span class="text-muted">Apr 25</span>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-meta">
+                                <h6>Orientation Week Starts Monday</h6>
+                                <p>Week 1 starts Monday. Schedule classrooms and staff.</p>
+                            </div>
+                            <span>Apr 25</span>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-meta">
+                                <h6>Midterm Exams Next Week</h6>
+                                <p>Prepare exam rooms and student advisories.</p>
+                            </div>
+                            <span>Apr 20</span>
+                        </div>
+                        <div class="announcement-item">
+                            <div class="announcement-meta">
+                                <h6>Spring Break Schedule Released</h6>
+                                <p>Check the holiday timetable and make-up classes.</p>
+                            </div>
+                            <span>Apr 16</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="attendance-grid">
+                    <div class="card attendance-card">
+                        <div class="attendance-body">
+                            <p class="text-muted text-uppercase small mb-2">Attendance Report</p>
+                            <h3>75%</h3>
+                            <p>Present</p>
+                        </div>
+                    </div>
+                    <div class="card attendance-card">
+                        <div class="attendance-body">
+                            <p class="text-muted text-uppercase small mb-2">System Reports</p>
+                            <h3>64%</h3>
+                            <p>Complete</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Edit Administrator</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<div class="login-box">
+
+<h1>👨‍💼 Edit Administrator</h1>
+
+<h3>Update Administrator Information</h3>
+
+<form action="/update_admin" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<input
+type="hidden"
+name="id"
+value="{{ admin[0] }}">
+
+<input
+type="text"
+name="fullname"
+value="{{ admin[2] }}"
+required>
+
+<input
+type="email"
+name="email"
+value="{{ admin[3] }}"
+required>
+
+<input
+type="password"
+name="password"
+value="{{ admin[4] }}"
+required>
+
+<button type="submit">
+
+SAVE CHANGES
+
+</button>
+
+</form>
+
+<br>
+
+<a href="/admin_dashboard">
+
+← Back to Dashboard
+
+</a>
+
+</div>
+
+</body>
+
+</html>

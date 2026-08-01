@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CampusConnect+ | Student Management</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+</head>
+<body>
+
+<div class="sidebar">
+
+    <div class="logo-area">
+
+        <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" class="logo">
+
+        <h2>CampusConnect+</h2>
+
+        <p>Administrator Panel</p>
+
+    </div>
+
+    <ul>
+
+        <li><a href="/admin_dashboard"> Dashboard</a></li>
+
+        <li><a href="/admin_students"> Students</a></li>
+
+        <li><a href="/admin_professors"> Professors</a></li>
+
+        <li><a href="/admin_subjects"> Subjects</a></li>
+
+        <li><a href="/admin_schedules"> Schedules</a></li>
+
+        <li><a href="/generate_qr"> Generate QR</a></li>
+
+        <li><a href="/admin_attendance"> Attendance</a></li>
+
+        <li><a href="/admin_reports"> Reports</a></li>
+
+        <li><a href="/admin_announcements"> Announcements</a></li>
+
+        <li><a href="/logout"> Logout</a></li>
+
+    </ul>
+
+</div>
+
+<div class="main">
+
+<div class="section-header">
+    <div>
+        <h1>Student Management</h1>
+        <p>Manage all registered students.</p>
+    </div>
+    <div>
+        <a href="/add_student" class="btn btn-primary me-2">+ Add Student</a>
+        <a href="/admin_dashboard" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="mb-3">
+    <input
+        type="text"
+        id="searchInput"
+        class="form-control"
+        placeholder="Search Student..."
+        onkeyup="searchStudent()">
+</div>
+
+<table id="studentTable">
+
+<tr>
+
+<th>ID</th>
+
+<th>Student ID</th>
+
+<th>Full Name</th>
+
+<th>Email</th>
+
+<th>Action</th>
+
+</tr>
+
+{% for student in students %}
+
+<tr>
+
+<td>{{ student[0] }}</td>
+
+<td>{{ student[1] }}</td>
+
+<td>{{ student[2] }}</td>
+
+<td>{{ student[3] }}</td>
+
+<td>
+
+<a href="/edit_student/{{ student[0] }}">
+<button>Edit</button>
+</a>
+
+<form action="/delete_student/{{ student[0] }}" method="POST" style="display:inline"
+onsubmit="return confirm('Delete this student?')">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<button type="submit">Delete</button>
+
+</form>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+<script>
+
+function searchStudent(){
+
+let input=document.getElementById("searchInput");
+
+let filter=input.value.toUpperCase();
+
+let table=document.getElementById("studentTable");
+
+let tr=table.getElementsByTagName("tr");
+
+for(let i=1;i<tr.length;i++){
+
+let td=tr[i].getElementsByTagName("td")[2];
+
+if(td){
+
+let txt=td.textContent||td.innerText;
+
+if(txt.toUpperCase().indexOf(filter)>-1){
+
+tr[i].style.display="";
+
+}else{
+
+tr[i].style.display="none";
+
+}
+
+}
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+services:
+  # The Flask backend + Flutter web frontend
+  - type: web
+    name: campusconnect-plus
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python init_db.py
+    startCommand: gunicorn app:app --worker-class=gthread --threads=4 --bind=0.0.0.0:$PORT --timeout=120
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      # Required: api.py signs mobile JWTs with this. The app refuses to
+      # start without it, so it must be present here too.
+      - key: JWT_SECRET
+        generateValue: true
+      # Required: password for the built-in "admin" account. Set this yourself
+      # in the Render dashboard — generateValue would give you a password you
+      # cannot read back.
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: FLASK_ENV
+        value: production
+      - key: QR_HOST_URL
+        value: ""
+      - key: PYTHON_VERSION
+        value: 3.11.0
+

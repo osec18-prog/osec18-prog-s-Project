@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Edit Subject</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+</head>
+
+<body>
+
+<h1>Edit Subject</h1>
+
+<form action="/update_subject" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<input
+type="hidden"
+name="id"
+value="{{ subject[0] }}">
+
+<input
+type="text"
+name="subject_code"
+value="{{ subject[1] }}"
+required>
+
+<input
+type="text"
+name="subject_name"
+value="{{ subject[2] }}"
+required>
+
+<input
+type="text"
+name="professor"
+value="{{ subject[3] }}"
+required>
+
+<input
+type="text"
+name="year_level"
+value="{{ subject[4] }}"
+required>
+
+<input
+type="text"
+name="semester"
+value="{{ subject[5] }}"
+required>
+
+<button type="submit">
+
+Save Changes
+
+</button>
+
+</form>
+
+<br>
+
+<a href="/admin_subjects">
+
+â¬… Back
+
+</a>
+
+</body>
+
+</html>

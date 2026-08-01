@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Subject Management</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <h2>CampusConnect+</h2>
+
+    <ul>
+
+        <li><a href="/admin_dashboard">Dashboard</a></li>
+
+        <li><a href="/admin_students">Student Management</a></li>
+
+        <li><a href="/admin_professors">Professor Management</a></li>
+
+        <li><a href="/admin_subjects">Subject Management</a></li>
+
+        <li><a href="/admin_schedules">Schedule Management</a></li>
+
+        <li><a href="/generate_qr">Generate QR</a></li>
+
+        <li><a href="/admin_attendance">Attendance</a></li>
+
+        <li><a href="/admin_reports">Reports</a></li>
+
+        <li><a href="/admin_announcements">Announcements</a></li>
+
+        <li><a href="/logout">Logout</a></li>
+
+    </ul>
+
+</div>
+
+<div class="main">
+
+<h1>Subject Management</h1>
+
+<table>
+
+<tr>
+    <th>ID</th>
+    <th>Subject Code</th>
+    <th>Subject Name</th>
+    <th>Professor</th>
+    <th>Year Level</th>
+    <th>Semester</th>
+    <th>Action</th>
+</tr>
+
+{% for subject in subjects %}
+
+<tr>
+
+<td>{{ subject[0] }}</td>
+<td>{{ subject[1] }}</td>
+<td>{{ subject[2] }}</td>
+<td>{{ subject[3] }}</td>
+<td>{{ subject[4] }}</td>
+<td>{{ subject[5] }}</td>
+
+<td>
+
+<a href="/edit_subject/{{ subject[0] }}">
+    <button>Edit</button>
+</a>
+
+<form action="/delete_subject/{{ subject[0] }}" method="POST" style="display:inline"
+onsubmit="return confirm('Delete Subject?')">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<button type="submit">Delete</button>
+
+</form>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br><br>
+
+<h2>Add New Subject</h2>
+
+<form action="/add_subject" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="text"
+name="subject_code"
+placeholder="Subject Code"
+required>
+
+<br><br>
+
+<input type="text"
+name="subject_name"
+placeholder="Subject Name"
+required>
+
+<br><br>
+
+<input type="text"
+name="professor"
+placeholder="Professor"
+required>
+
+<br><br>
+
+<select name="year_level" required>
+
+<option value="">Year Level</option>
+
+<option>1st Year</option>
+
+<option>2nd Year</option>
+
+<option>3rd Year</option>
+
+<option>4th Year</option>
+
+</select>
+
+<br><br>
+
+<select name="semester" required>
+
+<option value="">Semester</option>
+
+<option>1st Semester</option>
+
+<option>2nd Semester</option>
+
+<option>Summer</option>
+
+</select>
+
+<br><br>
+
+<button type="submit">
+Add Subject
+</button>
+
+</form>
+
+<br><br>
+
+<a href="/admin_dashboard">
+
+<button
+style="padding:10px 20px;
+background:#007BFF;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;">
+
+← Back to Dashboard
+
+</button>
+
+</a>
+
+</div>
+
+</body>
+</html>

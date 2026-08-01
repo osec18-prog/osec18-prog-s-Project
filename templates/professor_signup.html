@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Professor Signup</title>
+
+<link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
+
+</head>
+
+
+<body>
+
+
+<div class="login-box">
+
+
+<h1>
+Professor Registration
+</h1>
+
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+<input
+type="text"
+name="employee_id"
+placeholder="Imployee ID"
+required>
+
+
+<input
+type="text"
+name="fullname"
+placeholder="Full Name"
+required>
+
+
+<input
+type="email"
+name="email"
+placeholder="Email"
+required>
+
+
+<input
+type="password"
+name="password"
+placeholder="Password"
+required>
+
+
+<input
+type="text"
+name="department"
+placeholder="Department"
+required>
+
+<button>
+SIGN UP
+</button>
+
+</form>
+
+<a href="/professor_login" class="login-link">
+Already have account?
+</a>
+
+
+</div>
+
+
+</body>
+
+</html>

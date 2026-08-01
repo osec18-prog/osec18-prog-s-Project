@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Class Schedule</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<div class="sidebar">
+
+    <div class="logo-area">
+        <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" class="logo">
+        <h2>CampusConnect+</h2>
+        <p>AICS Student Portal</p>
+    </div>
+
+    <ul>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li><a href="/student_announcements">Announcements</a></li>
+        <li><a href="/student_schedule">Class Schedule</a></li>
+        <li><a href="/student_attendance">Attendance History</a></li>
+        <li><a href="/logout">Logout</a></li>
+    </ul>
+
+</div>
+
+<div class="main">
+
+<h1>My Class Schedule</h1>
+
+<h3>Welcome, {{ fullname }}</h3>
+
+<table border="1" cellpadding="10" cellspacing="0">
+
+<tr>
+    <th>Subject Code</th>
+    <th>Subject</th>
+    <th>Professor</th>
+    <th>Day</th>
+    <th>Time</th>
+    <th>Room</th>
+</tr>
+
+{% for row in schedules %}
+
+<tr>
+    <td>{{ row[0] }}</td>
+    <td>{{ row[1] }}</td>
+    <td>{{ row[2] }}</td>
+    <td>{{ row[3] }}</td>
+    <td>{{ row[4] }}</td>
+    <td>{{ row[5] }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>

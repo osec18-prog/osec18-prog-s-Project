@@ -1,0 +1,41 @@
+name: campusconnect_app
+description: "CampusConnect+ — AICS attendance and campus portal (Flutter client for the Flask backend)."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Talks to the Flask JSON API in api.py
+  http: ^1.2.2
+
+  # Remembers the server address + login token between launches
+  shared_preferences: ^2.3.2
+
+  # Student side: camera QR scanning
+  mobile_scanner: ^5.2.3
+
+  # Professor/admin side: rendering the attendance QR on screen
+  qr_flutter: ^4.1.0
+
+  # Date/time formatting
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/

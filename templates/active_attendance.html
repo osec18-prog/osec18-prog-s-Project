@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .attendance-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .attendance-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .attendance-metric {
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(15, 33, 80, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 30, 70, 0.05);
+        }
+        .attendance-metric h4 {
+            margin: 0 0 8px;
+            font-size: 0.95rem;
+            color: #5b6b8b;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .attendance-metric p {
+            margin: 0;
+            font-size: 2rem;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+        .session-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            align-items: center;
+            padding: 24px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(15, 33, 80, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 30, 70, 0.05);
+            margin-bottom: 24px;
+        }
+        .session-detail {
+            display: grid;
+            gap: 10px;
+        }
+        .session-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.75rem 1rem;
+            border-radius: 999px;
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 700;
+        }
+        .attendance-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .search-area {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            margin-bottom: 18px;
+            align-items: center;
+        }
+        .search-area input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(15, 33, 80, 0.14);
+            font-size: 0.95rem;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="main">
+    <div class="attendance-header">
+        <div>
+            <h1>Live Attendance Monitor</h1>
+            <p style="color: var(--text-muted); margin-top: 8px; max-width: 680px;">Track the current attendance session in real time, search students, and close the session when class ends.</p>
+        </div>
+        <div class="attendance-actions">
+            <a href="/active_attendance"><button class="edit-btn">Refresh</button></a>
+            {% if active_session %}
+                <form action="/close_attendance_session/{{ active_session[0] }}" method="POST" style="display:inline">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button type="submit" class="delete-btn">Close Session</button>
+</form>
+            {% endif %}
+            <a href="/professor_dashboard"><button class="back-btn">Back</button></a>
+        </div>
+    </div>
+
+    {% if not active_session %}
+        <div class="card" style="padding: 24px;">
+            <h2>No active attendance session</h2>
+            <p style="color: var(--text-muted);">There is no open session right now. Generate a new QR session from the QR page to begin attendance.</p>
+        </div>
+    {% else %}
+        <div class="session-card">
+            <div class="session-detail">
+                <h2 style="margin: 0;">{{ active_session[4] }} — {{ active_session[3] }}</h2>
+                <p style="margin: 0; color: var(--text-muted);">Professor: {{ active_session[2] }} · {{ active_session[5] }} · {{ active_session[6] }}</p>
+                <p style="margin: 0; color: var(--text-dark);">Date: {{ active_session[7] }} · Expires at: {{ active_session[8] }}</p>
+                <p style="margin: 0; word-break: break-all; color: var(--text-muted);">Token: {{ active_session[9] }}</p>
+            </div>
+            <div class="session-status">Active Session</div>
+        </div>
+
+        {% set present_count = 0 %}
+        {% set late_count = 0 %}
+        {% set absent_count = 0 %}
+        {% for row in attendance %}
+            {% if row[6] == 'Present' %}
+                {% set present_count = present_count + 1 %}
+            {% elif row[6] == 'Late' %}
+                {% set late_count = late_count + 1 %}
+            {% elif row[6] == 'Absent' %}
+                {% set absent_count = absent_count + 1 %}
+            {% endif %}
+        {% endfor %}
+        {% set total_count = attendance|length %}
+
+        <div class="attendance-metrics">
+            <div class="attendance-metric">
+                <h4>Total Students</h4>
+                <p>{{ total_count }}</p>
+            </div>
+            <div class="attendance-metric">
+                <h4>Present</h4>
+                <p>{{ present_count }}</p>
+            </div>
+            <div class="attendance-metric">
+                <h4>Late</h4>
+                <p>{{ late_count }}</p>
+            </div>
+            <div class="attendance-metric">
+                <h4>Absent</h4>
+                <p>{{ absent_count }}</p>
+            </div>
+        </div>
+
+        <div class="search-area">
+            <input type="text" id="studentSearch" placeholder="Search by student ID or name">
+            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
+                <span style="padding: 12px 18px; border-radius: 14px; background: rgba(47, 105, 255, 0.1); color: #1e3a8a; font-weight:700;">{{ total_count }} Records</span>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 24px;">
+            <h3 style="margin-bottom: 18px;">Attendance Table</h3>
+            {% if attendance %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="attendanceTable" style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; padding:12px 14px;">Student ID</th>
+                                <th style="text-align:left; padding:12px 14px;">Name</th>
+                                <th style="text-align:left; padding:12px 14px;">Subject</th>
+                                <th style="text-align:left; padding:12px 14px;">Date</th>
+                                <th style="text-align:left; padding:12px 14px;">Time</th>
+                                <th style="text-align:left; padding:12px 14px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in attendance %}
+                                <tr>
+                                    <td style="padding:12px 14px;">{{ row[0] }}</td>
+                                    <td style="padding:12px 14px;">{{ row[1] }}</td>
+                                    <td style="padding:12px 14px;">{{ row[2] }}</td>
+                                    <td style="padding:12px 14px;">{{ row[4] }}</td>
+                                    <td style="padding:12px 14px;">{{ row[5] }}</td>
+                                    <td style="padding:12px 14px;">{{ row[6] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="padding: 20px; border-radius: 16px; background: rgba(248, 250, 252, 0.9); color: var(--text-muted);">No student attendance records found for this session.</div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+<script>
+    const searchInput = document.getElementById('studentSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#attendanceTable tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+    }
+</script>
+</body>
+</html>

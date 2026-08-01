@@ -1,0 +1,312 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+}
+
+body{
+
+    background:
+    linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),
+    url("../images/aics-building.jpg");
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    height:100vh;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.login-box{
+
+    width:430px;
+
+    background:rgba(255,255,255,.15);
+
+    backdrop-filter:blur(15px);
+
+    border:1px solid rgba(255,255,255,.25);
+
+    border-radius:25px;
+
+    padding:40px;
+
+    text-align:center;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.5);
+
+}
+
+.logo{
+
+    width:120px;
+
+    margin-bottom:15px;
+
+}
+
+h1{
+
+    color:#ffffff;
+
+    font-size:38px;
+
+    font-weight:bold;
+
+    text-shadow:2px 2px 10px rgba(0,0,0,.8);
+
+    margin-bottom:8px;
+
+}
+
+h3{
+
+    color:#FFD700;
+
+    font-size:20px;
+
+    text-shadow:2px 2px 8px rgba(0,0,0,.8);
+
+    margin-bottom:30px;
+
+}
+
+input{
+
+    width:100%;
+
+    padding:15px;
+
+    margin:12px 0;
+
+    border:none;
+
+    border-radius:10px;
+
+    font-size:16px;
+
+    outline:none;
+
+}
+
+input:focus{
+
+    box-shadow:0 0 10px #0d6efd;
+
+}
+
+button{
+
+    width:100%;
+
+    padding:15px;
+
+    margin-top:15px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#0d6efd;
+
+    color:white;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+button:hover{
+
+    background:#0046b8;
+
+    transform:scale(1.03);
+
+}
+
+.footer{
+
+    margin-top:20px;
+
+    color:white;
+
+    font-size:13px;
+
+}
+.error-message{
+
+    background:#ffe5e5;
+
+    color:#d60000;
+
+    border:1px solid #ff4d4d;
+
+    padding:12px;
+
+    margin-bottom:15px;
+
+    border-radius:10px;
+
+    font-size:15px;
+
+    font-weight:bold;
+
+    text-align:center;
+
+}
+@keyframes shake{
+
+0%{transform:translateX(0);}
+25%{transform:translateX(-6px);}
+50%{transform:translateX(6px);}
+75%{transform:translateX(-6px);}
+100%{transform:translateX(0);}
+
+}
+
+.error-message{
+
+    background:#ffe5e5;
+
+    color:#d60000;
+
+    border:1px solid #ff4d4d;
+
+    padding:12px;
+
+    margin-bottom:15px;
+
+    border-radius:10px;
+
+    font-weight:bold;
+
+    animation:shake .3s;
+
+}
+
+select{
+
+    width:100%;
+
+    padding:15px;
+
+    margin:12px 0;
+
+    border:none;
+
+    border-radius:10px;
+
+    font-size:16px;
+
+}
+
+.back-btn{
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:10px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+    margin-bottom:20px;
+}
+
+.back-btn:hover{
+    background:#1d4ed8;
+}
+
+.create-account{
+    display:block;
+    margin-top:20px;
+    color:#FFD700; /* gold/yellow */
+    font-size:16px;
+    font-weight:bold;
+    text-decoration:none;
+}
+
+.login-link{
+    display:block;
+    margin-top:20px;
+    color:#FFD700;
+    font-size:16px;
+    font-weight:bold;
+    text-decoration:none;
+}
+
+
+.login-link:hover{
+    color:white;
+    text-decoration:underline;
+}
+
+/* ==========================
+   STUDENT ANNOUNCEMENTS
+========================== */
+
+.announcement-card{
+
+    background:#ffffff;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    margin-bottom:25px;
+
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+
+    transition:.3s;
+
+    border-left:8px solid #1b4db1;
+
+}
+
+.announcement-card:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:0 10px 25px rgba(0,0,0,.25);
+
+}
+
+.announcement-card h2{
+
+    color:#163a8c;
+
+    font-size:28px;
+
+    margin-bottom:12px;
+
+}
+
+.announcement-card p{
+
+    color:#555;
+
+    font-size:17px;
+
+    line-height:28px;
+
+    margin-bottom:15px;
+
+}
+
+.announcement-date{
+
+    color:#888;
+
+    font-size:15px;
+
+    font-weight:bold;
+
+}

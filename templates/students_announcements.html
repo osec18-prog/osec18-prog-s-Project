@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Announcements</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+
+<body>
+
+<div class="main">
+
+<h1>📢 Announcements</h1>
+
+<a href="/dashboard">
+    <button class="back-btn">⬅ Back</button>
+</a>
+
+<br><br>
+
+{% for announcement in announcements %}
+
+<div class="card">
+
+<h2>{{ announcement[0] }}</h2>
+
+<p>{{ announcement[1] }}</p>
+
+<small>{{ announcement[2] }}</small>
+
+</div>
+
+<br>
+
+{% endfor %}
+
+</div>
+
+</body>
+</html>

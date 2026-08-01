@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusConnect+ | Edit Schedule</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard-app">
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='images/transparentlogo.png') }}" alt="Campus Logo" class="brand-logo">
+            <div>
+                <h2>Campus Connect +</h2>
+                <p>Administrator Panel</p>
+            </div>
+        </div>
+        <nav class="dashboard-nav">
+            <a class="nav-link" href="/admin_dashboard">Dashboard</a>
+            <a class="nav-link" href="/admin_students">Students</a>
+            <a class="nav-link" href="/admin_professors">Professors</a>
+            <a class="nav-link active" href="/admin_schedules">Schedules</a>
+            <a class="nav-link" href="/generate_qr">Generate QR</a>
+            <a class="nav-link" href="/admin_attendance">Attendance</a>
+            <a class="nav-link" href="/admin_reports">Reports</a>
+            <a class="nav-link" href="/admin_announcements">Announcements</a>
+            <a class="nav-link" href="/logout">Logout</a>
+        </nav>
+    </aside>
+    <main class="dashboard-main">
+        <div class="section-header">
+            <div>
+                <h1>Edit Schedule</h1>
+                <p>Update schedule details for this subject.</p>
+            </div>
+            <div>
+                <a href="/admin_schedules" class="btn btn-outline-secondary">Back to Schedules</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form action="/update_schedule" method="POST" class="row g-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="id" value="{{ schedule[0] }}">
+                    <div class="col-md-6">
+                        <label class="form-label">Subject</label>
+                        <input list="subject_list" id="subject" name="subject" class="form-control" onchange="fillSubject()" value="{{ schedule[1] }}|{{ schedule[2] }}" required>
+                        <datalist id="subject_list">
+                            {% for subject in subjects %}
+                            <option value="{{ subject[0] }}|{{ subject[1] }}" data-professor="{{ subject[2] }}" data-year="{{ subject[3] }}" data-semester="{{ subject[4] }}">{{ subject[0] }} - {{ subject[1] }}</option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Professor</label>
+                        <select id="professor" name="professor" class="form-select" required>
+                            <option value="">Select Professor</option>
+                            {% for professor in professors %}
+                            <option value="{{ professor[0] }}" {% if professor[0] == schedule[3] %}selected{% endif %}>{{ professor[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Day</label>
+                        <select name="day" class="form-select" required>
+                            <option value="Monday" {% if schedule[4]=="Monday" %}selected{% endif %}>Monday</option>
+                            <option value="Tuesday" {% if schedule[4]=="Tuesday" %}selected{% endif %}>Tuesday</option>
+                            <option value="Wednesday" {% if schedule[4]=="Wednesday" %}selected{% endif %}>Wednesday</option>
+                            <option value="Thursday" {% if schedule[4]=="Thursday" %}selected{% endif %}>Thursday</option>
+                            <option value="Friday" {% if schedule[4]=="Friday" %}selected{% endif %}>Friday</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" name="start_time" class="form-control" value="{{ start_time }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">End Time</label>
+                        <input type="time" name="end_time" class="form-control" value="{{ end_time }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Room</label>
+                        <input type="text" name="room" class="form-control" value="{{ schedule[6] }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Year Level</label>
+                        <select id="year_level" name="year_level" class="form-select" required>
+                            <option value="">Select Year Level</option>
+                            <option {% if schedule[7] == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+                            <option {% if schedule[7] == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+                            <option {% if schedule[7] == '1st Year College' %}selected{% endif %}>1st Year College</option>
+                            <option {% if schedule[7] == '2nd Year College' %}selected{% endif %}>2nd Year College</option>
+                            <option {% if schedule[7] == '3rd Year College' %}selected{% endif %}>3rd Year College</option>
+                            <option {% if schedule[7] == '4th Year College' %}selected{% endif %}>4th Year College</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Semester</label>
+                        <select id="semester" name="semester" class="form-select" required>
+                            <option value="">Select Semester</option>
+                            <option {% if schedule[8] == '1st Semester' %}selected{% endif %}>1st Semester</option>
+                            <option {% if schedule[8] == '2nd Semester' %}selected{% endif %}>2nd Semester</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Class Type</label>
+                        <select name="class_type" class="form-select" required>
+                            <option value="">Select Class Type</option>
+                            <option {% if schedule[9] == 'Face-to-Face' %}selected{% endif %}>Face-to-Face</option>
+                            <option {% if schedule[9] == 'Online' %}selected{% endif %}>Online</option>
+                            <option {% if schedule[9] == 'Hybrid' %}selected{% endif %}>Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-primary">Update Schedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function fillSubject() {
+    const input = document.getElementById("subject").value;
+    const options = document.getElementById("subject_list").options;
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].value === input) {
+            document.getElementById("professor").value = options[i].dataset.professor;
+            document.getElementById("year_level").value = options[i].dataset.year;
+            document.getElementById("semester").value = options[i].dataset.semester;
+            return;
+        }
+    }
+}
+</script>
+</body>
+</html>

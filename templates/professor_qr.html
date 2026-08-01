@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor QR</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+<div class="main">
+    <h1>📱 Professor Verification QR</h1>
+    <p>Use this QR to verify your professor identity and enable attendance QR generation.</p>
+    <div class="qr-card">
+        <img src="{{ url_for('static', filename=qr_image) }}" alt="Professor QR" style="max-width:320px;">
+    </div>
+    <p><strong>QR Payload:</strong> {{ qr_payload }}</p>
+    <a href="/verify_professor_qr">
+        <button class="edit-btn">Verify Professor QR</button>
+    </a>
+    <br><br>
+    <a href="/professor_dashboard"><button>⬅ Back to Dashboard</button></a>
+</div>
+</body>
+</html>

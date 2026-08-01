@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Edit Announcement</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<div class="login-box">
+
+<h1>Edit Announcement</h1>
+
+<form action="/update_announcement" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<input
+type="hidden"
+name="id"
+value="{{ announcement[0] }}">
+
+<input
+type="text"
+name="title"
+value="{{ announcement[1] }}"
+required>
+
+<textarea
+name="description"
+rows="8"
+required>{{ announcement[2] }}</textarea>
+
+<br><br>
+
+<button type="submit">
+
+SAVE CHANGES
+
+</button>
+
+</form>
+
+<br>
+
+<a href="/admin_announcements">
+
+← Back
+
+</a>
+
+</div>
+
+</body>
+
+</html>
