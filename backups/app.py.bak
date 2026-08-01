@@ -28,18 +28,8 @@ from core import (
     parse_time_range,
     rate_limit_hit,
     rate_limit_reset,
-    verify_password,
 )
 from api import api
-from firebase_config import is_firestore_available
-from firestore_data import (
-    create_document,
-    delete_document,
-    get_document,
-    get_document_by_field,
-    list_documents,
-    update_document,
-)
 
 def _require_env(name):
     """Read a required secret from the environment, or refuse to start.
@@ -117,32 +107,6 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
 )
 log = logging.getLogger("campusconnect")
-
-
-def _authenticate_document_user(collection_name, lookup_field, lookup_value, password, doc_id_field="id"):
-    if not is_firestore_available():
-        return None
-
-    doc = get_document_by_field(collection_name, lookup_field, lookup_value)
-    if not doc:
-        return None
-
-    stored_hash = doc.get("password_hash")
-    if stored_hash and verify_password(password, stored_hash):
-        return doc
-
-    legacy_password = doc.get("password")
-    if legacy_password and legacy_password == password:
-        doc_id = doc.get(doc_id_field) or doc.get("id")
-        if doc_id:
-            update_document(
-                collection_name,
-                doc_id,
-                {"password_hash": hash_password(password), "password": ""},
-            )
-        return doc
-
-    return None
 
 
 @app.after_request
@@ -267,26 +231,21 @@ def login():
             error="Too many login attempts. Please wait a few minutes and try again."
         ), 429
 
+    conn = db.connect()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # Look the account up by id only; the password is checked in Python so a
+    # hashed password can be verified. Legacy plaintext rows are upgraded on
+    # the way through.
+    cursor.execute("SELECT * FROM students WHERE student_id=?", (student_id,))
+    row = cursor.fetchone()
+
     user = None
-    if is_firestore_available():
-        row = _authenticate_document_user("students", "student_id", student_id, password)
-        if row:
-            user = (row.get("fullname", ""), row.get("student_id", student_id), row.get("role", "student"))
-    else:
-        conn = db.connect()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+    if check_password_with_migration(conn, "students", "student_id", row, password):
+        user = (row["fullname"], row["student_id"], row["role"])
 
-        # Look the account up by id only; the password is checked in Python so a
-        # hashed password can be verified. Legacy plaintext rows are upgraded on
-        # the way through.
-        cursor.execute("SELECT * FROM students WHERE student_id=?", (student_id,))
-        row = cursor.fetchone()
-
-        if check_password_with_migration(conn, "students", "student_id", row, password):
-            user = (row["fullname"], row["student_id"], row["role"])
-
-        conn.close()
+    conn.close()
 
     if user:
         rate_limit_reset("login:%s" % client_ip())
@@ -333,23 +292,6 @@ def register():
     fullname = request.form["fullname"]
     email = request.form["email"]
     password = request.form["password"]
-
-    if is_firestore_available():
-        existing = get_document_by_field("students", "student_id", student_id)
-        if existing:
-            return render_template("register.html", error="Student ID already exists!")
-        create_document(
-            "students",
-            {
-                "student_id": student_id,
-                "fullname": fullname,
-                "email": email,
-                "password": "",
-                "password_hash": hash_password(password),
-                "role": "student",
-            },
-        )
-        return redirect("/")
 
     conn = db.connect()
     cursor = conn.cursor()
@@ -419,46 +361,34 @@ def admin_dashboard():
     if "role" not in session or session["role"] != "admin":
         return redirect("/")
 
-    if is_firestore_available():
-        students = []
-        for student in list_documents("students"):
-            students.append((student.get("id"), student.get("student_id"), student.get("fullname"), student.get("email")))
-        total_students = sum(1 for student in students if student[3] and student[1])
-        total_admins = sum(1 for student in students if student[2] and student[1])
-        total_professors = len(list_documents("professors"))
-        total_subjects = len(list_documents("subjects"))
-        total_classes = len(list_documents("schedules"))
-        active_sessions = 0
-        total_announcements = len(list_documents("announcements"))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""SELECT id, student_id, fullname, email FROM students ORDER BY fullname""")
-        students = cursor.fetchall()
+    cursor.execute("""SELECT id, student_id, fullname, email FROM students ORDER BY fullname""")
+    students = cursor.fetchall()
 
-        cursor.execute("SELECT COUNT(*) FROM students WHERE role='student'")
-        total_students = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM students WHERE role='student'")
+    total_students = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM students WHERE role='admin'")
-        total_admins = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM students WHERE role='admin'")
+    total_admins = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM professors")
-        total_professors = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM professors")
+    total_professors = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM subjects")
-        total_subjects = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM subjects")
+    total_subjects = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM schedules")
-        total_classes = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM schedules")
+    total_classes = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM attendance_sessions WHERE active=1")
-        active_sessions = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM attendance_sessions WHERE active=1")
+    active_sessions = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM announcements")
-        total_announcements = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM announcements")
+    total_announcements = cursor.fetchone()[0]
 
-        conn.close()
+    conn.close()
 
     return render_template(
         "admin_dashboard.html",
@@ -542,14 +472,11 @@ def delete_student(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        delete_document("students", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM students WHERE id=?", (id,))
-        conn.commit()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM students WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
     return redirect("/admin_dashboard")
 
 
@@ -564,14 +491,11 @@ def edit_student(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        student = get_document("students", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM students WHERE id=?", (id,))
-        student = cursor.fetchone()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM students WHERE id=?", (id,))
+    student = cursor.fetchone()
+    conn.close()
 
     if student is None:
         return redirect("/admin_students")
@@ -590,18 +514,15 @@ def update_student():
     fullname = request.form["fullname"]
     email = request.form["email"]
 
-    if is_firestore_available():
-        update_document("students", str(id), {"student_id": student_id, "fullname": fullname, "email": email})
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE students
-            SET student_id=?, fullname=?, email=?
-            WHERE id=?
-        """, (student_id, fullname, email, id))
-        conn.commit()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE students
+        SET student_id=?, fullname=?, email=?
+        WHERE id=?
+    """, (student_id, fullname, email, id))
+    conn.commit()
+    conn.close()
     return redirect("/admin_students")
 
 
@@ -616,15 +537,11 @@ def admin_announcements():
     if session["role"] not in ["admin", "professor"]:
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        announcements = list_documents("announcements")
-        announcements.sort(key=lambda item: item.get("id", 0), reverse=True)
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("""SELECT id, title, description, date_created FROM announcements ORDER BY id DESC""")
-        announcements = cursor.fetchall()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("""SELECT id, title, description, date_created FROM announcements ORDER BY id DESC""")
+    announcements = cursor.fetchall()
+    conn.close()
 
     return render_template("announcements.html", announcements=announcements,
                            fullname=session.get("fullname", session.get("professor_name", "")))
@@ -643,17 +560,14 @@ def add_announcement():
     if not title or not description:
         return redirect("/admin_announcements")
 
-    if is_firestore_available():
-        create_document("announcements", {"title": title, "description": description, "date_created": datetime.now().strftime("%Y-%m-%d %I:%M %p")})
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO announcements (title, description, date_created)
-            VALUES (?,?,?)
-        """, (title, description, datetime.now().strftime("%Y-%m-%d %I:%M %p")))
-        conn.commit()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO announcements (title, description, date_created)
+        VALUES (?,?,?)
+    """, (title, description, datetime.now().strftime("%Y-%m-%d %I:%M %p")))
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_announcements")
 
@@ -663,14 +577,11 @@ def delete_announcement(id):
     if "role" not in session or session["role"] != "admin":
         return redirect("/")
 
-    if is_firestore_available():
-        delete_document("announcements", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM announcements WHERE id=?", (id,))
-        conn.commit()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM announcements WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
     return redirect("/admin_announcements")
 
 
@@ -679,14 +590,11 @@ def edit_announcement(id):
     if "role" not in session or session["role"] != "admin":
         return redirect("/")
 
-    if is_firestore_available():
-        announcement = get_document("announcements", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, title, description FROM announcements WHERE id=?", (id,))
-        announcement = cursor.fetchone()
-        conn.close()
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, description FROM announcements WHERE id=?", (id,))
+    announcement = cursor.fetchone()
+    conn.close()
     return render_template("edit_announcement.html", announcement=announcement)
 
 
@@ -704,25 +612,22 @@ def update_announcement():
     title = request.form["title"]
     description = request.form["description"]
 
-    if is_firestore_available():
-        update_document("announcements", str(id), {"title": title, "description": description})
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""
-            UPDATE announcements
-            SET title=?,
-                description=?
-            WHERE id=?
-        """, (
-            title,
-            description,
-            id
-        ))
+    cursor.execute("""
+        UPDATE announcements
+        SET title=?,
+            description=?
+        WHERE id=?
+    """, (
+        title,
+        description,
+        id
+    ))
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_announcements")
 
@@ -737,22 +642,18 @@ def student_announcements():
     if "student_id" not in session:
         return redirect("/")
 
-    if is_firestore_available():
-        announcements = list_documents("announcements")
-        announcements.sort(key=lambda item: item.get("id", 0), reverse=True)
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT title, description, date_created
-            FROM announcements
-            ORDER BY id DESC
-        """)
+    cursor.execute("""
+        SELECT title, description, date_created
+        FROM announcements
+        ORDER BY id DESC
+    """)
 
-        announcements = cursor.fetchall()
+    announcements = cursor.fetchall()
 
-        conn.close()
+    conn.close()
 
     return render_template(
         "student_announcements.html",
@@ -769,22 +670,18 @@ def admin_professors():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        professors = list_documents("professors")
-        professors.sort(key=lambda item: str(item.get("fullname", "")))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT *
-            FROM professors
-            ORDER BY fullname
-        """)
+    cursor.execute("""
+        SELECT *
+        FROM professors
+        ORDER BY fullname
+    """)
 
-        professors = cursor.fetchall()
+    professors = cursor.fetchall()
 
-        conn.close()
+    conn.close()
 
     return render_template(
         "professors.html",
@@ -808,42 +705,23 @@ def add_professor():
         password = request.form["password"]
         department = request.form["department"]
 
-        if is_firestore_available():
-            existing = get_document_by_field("professors", "employee_id", employee_id)
-            if existing or get_document_by_field("professors", "email", email):
-                return render_template(
-                    "add_professor.html",
-                    error="Professor ID or Email already exists!"
-                )
-            create_document(
-                "professors",
-                {
-                    "employee_id": employee_id,
-                    "fullname": fullname,
-                    "email": email,
-                    "password": "",
-                    "password_hash": hash_password(password),
-                    "department": department,
-                },
-            )
-        else:
-            conn = db.connect()
-            cursor = conn.cursor()
+        conn = db.connect()
+        cursor = conn.cursor()
 
-            try:
-                cursor.execute(
-                    "INSERT INTO professors(employee_id, fullname, email, password, password_hash, department) VALUES (?, ?, ?, ?, ?, ?)",
-                    (employee_id, fullname, email, "", hash_password(password), department)
-                )
-                conn.commit()
-            except sqlite3.IntegrityError:
-                conn.close()
-                return render_template(
-                    "add_professor.html",
-                    error="Professor ID or Email already exists!"
-                )
-            finally:
-                conn.close()
+        try:
+            cursor.execute(
+                "INSERT INTO professors(employee_id, fullname, email, password, password_hash, department) VALUES (?, ?, ?, ?, ?, ?)",
+                (employee_id, fullname, email, "", hash_password(password), department)
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            conn.close()
+            return render_template(
+                "add_professor.html",
+                error="Professor ID or Email already exists!"
+            )
+        finally:
+            conn.close()
 
         return redirect("/admin_professors")
 
@@ -861,19 +739,16 @@ def delete_professor(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        delete_document("professors", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute(
-            "DELETE FROM professors WHERE id=?",
-            (id,)
-        )
+    cursor.execute(
+        "DELETE FROM professors WHERE id=?",
+        (id,)
+    )
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_professors")
 
@@ -892,29 +767,26 @@ def update_professor():
     email = request.form["email"]
     department = request.form["department"]
 
-    if is_firestore_available():
-        update_document("professors", str(id), {"employee_id": employee_id, "fullname": fullname, "email": email, "department": department})
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""
-            UPDATE professors
-            SET employee_id=?,
-                fullname=?,
-                email=?,
-                department=?
-            WHERE id=?
-        """, (
-            employee_id,
-            fullname,
-            email,
-            department,
-            id
-        ))
+    cursor.execute("""
+        UPDATE professors
+        SET employee_id=?,
+            fullname=?,
+            email=?,
+            department=?
+        WHERE id=?
+    """, (
+        employee_id,
+        fullname,
+        email,
+        department,
+        id
+    ))
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_professors")
 
@@ -927,20 +799,17 @@ def edit_professor(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        professor = get_document("professors", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute(
-            "SELECT * FROM professors WHERE id=?",
-            (id,)
-        )
+    cursor.execute(
+        "SELECT * FROM professors WHERE id=?",
+        (id,)
+    )
 
-        professor = cursor.fetchone()
+    professor = cursor.fetchone()
 
-        conn.close()
+    conn.close()
 
     if professor is None:
         return redirect("/admin_professors")
@@ -960,20 +829,17 @@ def edit_subject(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        subject = get_document("subjects", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute(
-            "SELECT * FROM subjects WHERE id=?",
-            (id,)
-        )
+    cursor.execute(
+        "SELECT * FROM subjects WHERE id=?",
+        (id,)
+    )
 
-        subject = cursor.fetchone()
+    subject = cursor.fetchone()
 
-        conn.close()
+    conn.close()
 
     return render_template(
         "edit_subject.html",
@@ -989,22 +855,18 @@ def admin_subjects():
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        subjects = list_documents("subjects")
-        subjects.sort(key=lambda item: str(item.get("subject_code", "")))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT *
-            FROM subjects
-            ORDER BY subject_code
-        """)
+    cursor.execute("""
+        SELECT *
+        FROM subjects
+        ORDER BY subject_code
+    """)
 
-        subjects = cursor.fetchall()
+    subjects = cursor.fetchall()
 
-        conn.close()
+    conn.close()
 
     return render_template(
         "subjects.html",
@@ -1026,26 +888,23 @@ def add_subject():
     year_level = request.form["year_level"]
     semester = request.form["semester"]
 
-    if is_firestore_available():
-        create_document("subjects", {"subject_code": subject_code, "subject_name": subject_name, "professor": professor, "year_level": year_level, "semester": semester})
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO subjects
-            (subject_code, subject_name, professor, year_level, semester)
-            VALUES (?,?,?,?,?)
-        """, (
-            subject_code,
-            subject_name,
-            professor,
-            year_level,
-            semester
-        ))
+    cursor.execute("""
+        INSERT INTO subjects
+        (subject_code, subject_name, professor, year_level, semester)
+        VALUES (?,?,?,?,?)
+    """, (
+        subject_code,
+        subject_name,
+        professor,
+        year_level,
+        semester
+    ))
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_subjects")
 
@@ -1058,19 +917,16 @@ def delete_subject(id):
     if session["role"] != "admin":
         return redirect("/dashboard")
 
-    if is_firestore_available():
-        delete_document("subjects", str(id))
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        cursor.execute(
-            "DELETE FROM subjects WHERE id=?",
-            (id,)
-        )
+    cursor.execute(
+        "DELETE FROM subjects WHERE id=?",
+        (id,)
+    )
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_subjects")
 
@@ -1090,48 +946,42 @@ def update_subject():
     year_level = request.form["year_level"]
     semester = request.form["semester"]
 
-    if is_firestore_available():
-        existing = get_document_by_field("subjects", "subject_code", subject_code)
-        if existing and str(existing.get("id")) != str(id):
-            return "Error: Subject Code already exists."
-        update_document("subjects", str(id), {"subject_code": subject_code, "subject_name": subject_name, "professor": professor, "year_level": year_level, "semester": semester})
-    else:
-        conn = db.connect()
-        cursor = conn.cursor()
+    conn = db.connect()
+    cursor = conn.cursor()
 
-        # Check kung may kaparehong Subject Code
-        cursor.execute("""
-            SELECT id
-            FROM subjects
-            WHERE subject_code=? AND id!=?
-        """, (subject_code, id))
+    # Check kung may kaparehong Subject Code
+    cursor.execute("""
+        SELECT id
+        FROM subjects
+        WHERE subject_code=? AND id!=?
+    """, (subject_code, id))
 
-        existing = cursor.fetchone()
+    existing = cursor.fetchone()
 
-        if existing:
-            conn.close()
-            return "Error: Subject Code already exists."
-
-        cursor.execute("""
-            UPDATE subjects
-            SET
-                subject_code=?,
-                subject_name=?,
-                professor=?,
-                year_level=?,
-                semester=?
-            WHERE id=?
-        """, (
-            subject_code,
-            subject_name,
-            professor,
-            year_level,
-            semester,
-            id
-        ))
-
-        conn.commit()
+    if existing:
         conn.close()
+        return "Error: Subject Code already exists."
+
+    cursor.execute("""
+        UPDATE subjects
+        SET
+            subject_code=?,
+            subject_name=?,
+            professor=?,
+            year_level=?,
+            semester=?
+        WHERE id=?
+    """, (
+        subject_code,
+        subject_name,
+        professor,
+        year_level,
+        semester,
+        id
+    ))
+
+    conn.commit()
+    conn.close()
 
     return redirect("/admin_subjects")
 
@@ -2268,29 +2118,26 @@ def professor_login():
         ), 429
 
 
+    conn = db.connect()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+
+    cursor.execute("""
+        SELECT *
+        FROM professors
+        WHERE email=?
+    """,
+    (email,))
+
+
+    row = cursor.fetchone()
+
     professor = None
-    if is_firestore_available():
-        row = get_document_by_field("professors", "email", email)
-        if row:
-            professor = _authenticate_document_user("professors", "email", email, password)
-    else:
-        conn = db.connect()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+    if check_password_with_migration(conn, "professors", "employee_id", row, password):
+        professor = row
 
-        cursor.execute("""
-            SELECT *
-            FROM professors
-            WHERE email=?
-        """,
-        (email,))
-
-        row = cursor.fetchone()
-
-        if check_password_with_migration(conn, "professors", "employee_id", row, password):
-            professor = row
-
-        conn.close()
+    conn.close()
 
 
     if professor:
@@ -2352,27 +2199,8 @@ def professor_signup():
     password = request.form["password"]
     department = request.form["department"]
 
-    if is_firestore_available():
-        existing = get_document_by_field("professors", "employee_id", employee_id)
-        if existing or get_document_by_field("professors", "email", email):
-            return render_template(
-                "professor_signup.html",
-                error="Professor ID or Email already exists!"
-            )
-        create_document(
-            "professors",
-            {
-                "employee_id": employee_id,
-                "fullname": fullname,
-                "email": email,
-                "password": "",
-                "password_hash": hash_password(password),
-                "department": department,
-            },
-        )
-        return redirect("/professor_login")
-
     try:
+
         conn = db.connect()
         cursor = conn.cursor()
 
@@ -2395,6 +2223,7 @@ def professor_signup():
         return redirect("/professor_login")
 
     except sqlite3.IntegrityError:
+
         return render_template(
             "professor_signup.html",
             error="Professor ID or Email already exists!"

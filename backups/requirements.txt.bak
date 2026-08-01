@@ -4,7 +4,6 @@ PyJWT>=2.8
 qrcode[pil]>=7.4
 Pillow>=10.0
 gunicorn>=21.2
-firebase-admin>=7.0.0
 # PostgreSQL driver. Used only through db.py; when DATABASE_URL is unset the
 # application falls back to SQLite and this is never imported.
 psycopg2-binary>=2.9.9
