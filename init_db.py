@@ -215,6 +215,22 @@ def init_database():
     """)
 
     # -----------------------------
+    # REVOKED JWTS TABLE
+    # -----------------------------
+    # Logging out cannot delete a stateless JWT, so the token's "jti" claim is
+    # recorded here and api._verify_jwt refuses any token listed. Kept
+    # byte-identical to core.ensure_schema's definition: that one runs at app
+    # start on an existing database, this one builds a database from nothing,
+    # and the two must not drift.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS revoked_jwts(
+        jti TEXT PRIMARY KEY,
+        expires_at INTEGER,
+        revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # -----------------------------
     # DEFAULT ADMIN ACCOUNT
     # -----------------------------
     # The password column stays empty; only the hash is stored.

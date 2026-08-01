@@ -12,12 +12,13 @@ WHAT --apply DOES
     init_db.init_database(), so the migrated schema is by definition the one
     the application expects. db.py rewrites the SQLite DDL on the way through
     (AUTOINCREMENT to IDENTITY, ALTER TABLE to ADD COLUMN IF NOT EXISTS).
-    Anything init_db seeds is discarded in step 3 by TRUNCATE.
-2.  Reports duplicate attendance rows and drops all but the earliest.
-3.  Copies every row of every table, values preserved exactly.
-4.  Resets identity sequences past the copied ids so new inserts do not
+    Anything init_db seeds is discarded in step 4 by TRUNCATE.
+2.  Checks every table the copy needs is present, before writing anything.
+3.  Reports duplicate attendance rows and drops all but the earliest.
+4.  Copies every row of every table, values preserved exactly.
+5.  Resets identity sequences past the copied ids so new inserts do not
     collide with migrated ones.
-5.  Verifies row counts table by table.
+6.  Verifies row counts table by table.
 
 FAILURE HANDLING
 ────────────────
@@ -137,6 +138,34 @@ def create_schema():
     print("=" * 74)
     init_db.init_database()
     print("  Schema created/verified. Seeded rows will be replaced by the copy.")
+
+
+def check_schema(pconn):
+    """Confirm every table in TABLES exists before a single row is copied.
+
+    Without this the run dies inside the copy loop on the first missing table,
+    after earlier tables have already been truncated and refilled -- naming one
+    table when several may be absent. Checking up front reports them all.
+    """
+    pcur = pconn.cursor()
+    pcur.execute("SELECT table_name FROM information_schema.tables "
+                 "WHERE table_schema='public'")
+    present = {r[0].lower() for r in pcur.fetchall()}
+
+    print()
+    print("=" * 74)
+    print("SCHEMA CHECK")
+    print("=" * 74)
+    missing = [t for t in TABLES if t not in present]
+    for table in TABLES:
+        print("  %-22s %s" % (table, "OK" if table in present else "MISSING"))
+
+    if missing:
+        raise SystemExit(
+            "\n%d table(s) missing from PostgreSQL: %s\n"
+            "Run with --apply so the schema is created first, or run "
+            "init_db.py against DATABASE_URL." % (len(missing), ", ".join(missing)))
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -285,6 +314,8 @@ def main():
     pconn = psycopg2.connect(url)
     all_failures = []
     try:
+        check_schema(pconn)
+
         print()
         print("=" * 74)
         print("TABLE COPY  (%s)" % ("APPLY" if apply else "DRY RUN — nothing written"))
